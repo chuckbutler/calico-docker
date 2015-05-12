@@ -1003,6 +1003,14 @@ def validate_arguments():
     container_ip_ok = arguments["<IP>"] is None or \
                       netaddr.valid_ipv4(arguments["<IP>"]) or \
                       netaddr.valid_ipv6(arguments["<IP>"])
+
+    no_args = not (arguments["--rr"] or
+                   arguments["--ebgp"] or
+                   arguments["--ibgp"])
+    one_arg = arguments["--rr"] ^ arguments["--ebgp"] ^ arguments["--ibgp"]
+    peer_ok = (not arguments["bgppeer"] and no_args) or \
+              (arguments["bgppeer"] and one_arg)
+
     cidr_ok = True
     if arguments["<CIDR>"]:
         try:
@@ -1021,6 +1029,11 @@ def validate_arguments():
         print "Invalid IPv6 address specified with --ip6 argument."
     if not container_ip_ok:
         print "Invalid IP address specified."
+    if not peer_ok:
+        if arguments["bgppeer"]:
+            print "Only one type of BGP may be specified."
+        else:
+            print "Must specify a BGP peer type, either --rr, --ebgp or --ibgp."
     if not cidr_ok:
         print "Invalid CIDR specified."
 
@@ -1166,11 +1179,20 @@ if __name__ == '__main__':
                     ip_pool_show("v6")
                 else:
                     ip_pool_show(ip_version)
-        elif arguments["bgppeer"] and arguments["rr"]:
+        elif arguments["bgppeer"]:
+            peer_type = None
+
+            if arguments["--rr"]:
+                peer_type = "rr"
+            elif arguments["--ibgp"]:
+                peer_type = "ibgp"
+            elif arguments["--ebgp"]:
+                peer_type = "ebgp"
+
             if arguments["add"]:
-                bgppeer_add(arguments["<IP>"], ip_version)
+                bgppeer_add(arguments["<IP>"], ip_version, peer_type)
             elif arguments["remove"]:
-                bgppeer_remove(arguments["<IP>"], ip_version)
+                bgppeer_remove(arguments["<IP>"], ip_version, peer_type)
             elif arguments["show"]:
                 if not ip_version:
                     bgppeer_show("v4")
