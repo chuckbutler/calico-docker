@@ -783,16 +783,17 @@ def restart_docker_without_alternative_unix_socket():
     docker_restarter.restart_docker_without_alternative_unix_socket()
 
 
-def bgppeer_add(ip, version):
+def bgppeer_add(ip, version, peer_type):
     """
     Add the the given IP to the list of BGP Peers
 
     :param ip: The address to add
     :param version: v4 or v6
+    :param peer_type: Whether the peer is a route reflector, iBGP or eBGP.
     :return: None
     """
     address = check_ip_version(ip, version, IPAddress)
-    client.add_bgp_peer(version, address)
+    client.add_bgp_peer(version, address, peer_type)
 
 
 def check_ip_version(ip, version, cls):
@@ -1008,8 +1009,9 @@ def validate_arguments():
                    arguments["--ebgp"] or
                    arguments["--ibgp"])
     one_arg = arguments["--rr"] ^ arguments["--ebgp"] ^ arguments["--ibgp"]
-    peer_ok = (not arguments["bgppeer"] and no_args) or \
-              (arguments["bgppeer"] and one_arg)
+    bgp_add = arguments["bgppeer"] and arguments["add"]
+    peer_ok = (not bgp_add and no_args) or \
+              (bgp_add and one_arg)
 
     cidr_ok = True
     if arguments["<CIDR>"]:
@@ -1180,19 +1182,16 @@ if __name__ == '__main__':
                 else:
                     ip_pool_show(ip_version)
         elif arguments["bgppeer"]:
-            peer_type = None
-
-            if arguments["--rr"]:
-                peer_type = "rr"
-            elif arguments["--ibgp"]:
-                peer_type = "ibgp"
-            elif arguments["--ebgp"]:
-                peer_type = "ebgp"
-
             if arguments["add"]:
+                if arguments["--rr"]:
+                    peer_type = "rr"
+                elif arguments["--ibgp"]:
+                    peer_type = "ibgp"
+                elif arguments["--ebgp"]:
+                    peer_type = "ebgp"
                 bgppeer_add(arguments["<IP>"], ip_version, peer_type)
             elif arguments["remove"]:
-                bgppeer_remove(arguments["<IP>"], ip_version, peer_type)
+                bgppeer_remove(arguments["<IP>"], ip_version)
             elif arguments["show"]:
                 if not ip_version:
                     bgppeer_show("v4")

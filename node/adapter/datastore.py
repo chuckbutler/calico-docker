@@ -385,7 +385,7 @@ class DatastoreClient(object):
             return values
 
     @handle_errors
-    def add_bgp_peer(self, version, ip):
+    def add_bgp_peer(self, version, ip, peer_type):
         """
         Add a BGP Peer.
 
@@ -393,6 +393,7 @@ class DatastoreClient(object):
 
         :param version: "v4" for IPv4, "v6" for IPv6
         :param ip: The IP address to add. (an IPAddress)
+        :param peer_type: Whether the peer is a route reflector, iBGP or eBGP.
         :return: Nothing
         """
         assert version in ("v4", "v6")
